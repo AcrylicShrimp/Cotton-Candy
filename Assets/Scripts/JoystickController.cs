@@ -5,26 +5,49 @@ using UnityEngine.UI;
 [RequireComponent(typeof(RawImage))]
 public class JoystickController : MonoBehaviour
 {
+	public Vector2 Velocity { get { return this.transform.localPosition / this.MaxDistance; } }
+
 	public float MaxDistance;
 	public float MaxDuration;
-
-	private RawImage sJoystickHead;
+	public CanvasScaler UICanvasScaler;
+	
 	private EasingFunction.EasingFunc fEasingFunc;
+	private Vector2 sLastMousePosition;
+	private float nScaleFactor;
 
 	private void Awake()
 	{
-		this.sJoystickHead = this.gameObject.GetComponent<RawImage>();
-		this.fEasingFunc = EasingFunction.Linear;
+		this.fEasingFunc = EasingFunction.Quintic.Out;
+		this.nScaleFactor = this.UICanvasScaler.referenceResolution.x / Screen.width;
 	}
 
-	private void OnMouseDown()
+	public void OnMouseDown()
 	{
-
+		this.StopAllCoroutines();
+		this.sLastMousePosition = Input.mousePosition;
 	}
 
-	private void OnMouseUp()
+	public void OnMouseDrag()
 	{
-		if(this.transform.localPosition.x != 0f || this.transform.localPosition.y != 0f)
+		Vector2 sMousePosition = Input.mousePosition;
+		Vector2 sDeltaPosition = (sMousePosition - this.sLastMousePosition) * this.nScaleFactor;
+		Vector2 sCurrentPosition = this.transform.localPosition;
+
+		sCurrentPosition += sDeltaPosition;
+
+		if (sCurrentPosition.magnitude >= this.MaxDistance)
+		{
+			sCurrentPosition.Normalize();
+			sCurrentPosition *= this.MaxDistance;
+		}
+
+		this.transform.localPosition = sCurrentPosition;
+		this.sLastMousePosition = sMousePosition;
+	}
+
+	public void OnMouseUp()
+	{
+		if (this.transform.localPosition.x != 0f || this.transform.localPosition.y != 0f)
 			this.StartCoroutine(this.smoothReset());
 	}
 
